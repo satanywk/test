@@ -85,10 +85,11 @@ function sendMessage() {
     displayMessage('user', message);
     inputElement.value = '';
 
-    // 显示加载动画
+    // 修改加载动画显示方式
     const loadingElement = document.getElementById('loading');
     if (loadingElement) {
-        loadingElement.style.display = 'block';
+        loadingElement.innerHTML = '<div class="loading-spinner"></div>';
+        loadingElement.style.display = 'flex';
     }
 
     const apiKey = 'sk-a6c8acba3dc34246b20ab1bfa0b61bb7';
@@ -114,7 +115,6 @@ function sendMessage() {
     })
     .then(response => response.json())
     .then(data => {
-        // 隐藏加载动画
         if (loadingElement) {
             loadingElement.style.display = 'none';
         }
@@ -126,7 +126,6 @@ function sendMessage() {
         }
     })
     .catch(error => {
-        // 隐藏加载动画
         if (loadingElement) {
             loadingElement.style.display = 'none';
         }
@@ -159,6 +158,33 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelector('.chat-container').classList.add('dark-mode');
         document.querySelector('.messages').classList.add('dark-mode');
     }
+
+    // 新增加载动画样式
+    const style = document.createElement('style');
+    style.textContent = `
+        .loading-spinner {
+            border: 3px solid #f3f3f3;
+            border-radius: 50%;
+            border-top: 3px solid #3498db;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        #loading {
+            display: none;
+            justify-content: center;
+            align-items: center;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+    `;
+    document.head.appendChild(style);
 });
 
 // 添加下拉菜单功能
