@@ -72,9 +72,8 @@ function displayMessage(role, message) {
     messageElement.appendChild(avatar);
     messageElement.appendChild(messageContent);
     messagesContainer.appendChild(messageElement);
+    return messageElement; // 返回新建的消息元素
     
-    // 平滑滚动到底部
-    messageElement.scrollIntoView({ behavior: 'smooth' });
 }
 
 function sendMessage() {
@@ -101,9 +100,12 @@ function sendMessage() {
             { role: "system", content: "You are a helpful assistant" },
             { role: "user", content: message }
         ],
-        stream: false,
+        stream: true,  // 修改为true启用流式传输
         max_tokens: 3000
     };
+
+    let accumulatedResponse = '';
+    const botMessageElement = displayMessage('bot', ''); // 创建空消息容器
 
     fetch(endpoint, {
         method: 'POST',
@@ -113,25 +115,55 @@ function sendMessage() {
         },
         body: JSON.stringify(payload)
     })
-    .then(response => response.json())
-    .then(data => {
-        if (loadingElement) {
-            loadingElement.style.display = 'none';
-        }
+    .then(async response => {
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let isError = false;
 
-        if (data.choices && data.choices.length > 0) {
-            displayMessage('bot', data.choices[0].message.content);
-        } else {
-            displayMessage('bot', '出错了，请稍后再试。');
+        try {
+            while(true) {
+                const { done, value } = await reader.read();
+                if(done) break;
+                
+                const chunk = decoder.decode(value);
+                const lines = chunk.split('\n').filter(line => line.trim());
+                
+                for(const line of lines) {
+                    try {
+                        const message = line.replace(/^data: /, '');
+                        if(message === '[DONE]') break;
+                        
+                        const parsed = JSON.parse(message);
+                        if(parsed.choices[0].delta.content) {
+                            accumulatedResponse += parsed.choices[0].delta.content;
+                            // 逐步更新消息内容
+                            botMessageElement.querySelector('.message-content').innerHTML = 
+                                formatMessage(accumulatedResponse);
+                            botMessageElement.scrollIntoView({ behavior: 'smooth' });
+                        }
+                    } catch(e) {
+                        console.error('解析错误:', e);
+                    }
+                }
+            }
+        } catch(e) {
+            isError = true;
+            console.error('流式读取错误:', e);
+        } finally {
+            if (loadingElement) {
+                loadingElement.style.display = 'none';
+            }
+            if (isError) {
+                displayMessage('bot', '出错了，请稍后再试。');
+            }
         }
     })
     .catch(error => {
         if (loadingElement) {
             loadingElement.style.display = 'none';
         }
-
         displayMessage('bot', '出错了，请稍后再试。');
-        console.error('Error:', error);
+        console.error('请求错误:', error);
     });
 }
 

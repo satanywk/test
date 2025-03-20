@@ -73,14 +73,14 @@ body {
 }
 
 .message.user .message-content {
-    background-color: #007bff;
-    backdrop-filter: blur(80px);
+    background-color: #0c51e4;
+    /* backdrop-filter: blur(80px); */
     color: white;
     text-align: right;
 }
 
 .message.bot .message-content {
-    background-color: #f1f3f5;
+    background-color: #59da7b;
 }
 
 .input-container {
